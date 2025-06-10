@@ -67,20 +67,19 @@ public class MenuApp {
         sc.close();
     }
 
-    // 메뉴 목록을 출력하는 메서드
+    // ✅ menu_id로 출력
     public static void showMenuList(MenuDAO menuDAO) {
         List<MenuVO> menuList = menuDAO.menuList();
 
         System.out.println("\n[2. 메뉴관리]");
-        System.out.println("번호\t카테고리\t메뉴명\t단가");
+        System.out.println("ID\t카테고리\t메뉴명\t단가");
 
-        for (int i = 0; i < menuList.size(); i++) {
-            MenuVO menu = menuList.get(i);
+        for (MenuVO menu : menuList) {
             System.out.println(
-                    (i + 1) + "\t" +
-                    menu.getCategoryName() + "\t" +
-                    menu.getMenuName() + "\t" +
-                    menu.getUnitPrice()
+                menu.getMenuId() + "\t" +   // ✅ menu_id 직접 출력
+                menu.getCategoryName() + "\t" +
+                menu.getMenuName() + "\t" +
+                menu.getUnitPrice()
             );
         }
 

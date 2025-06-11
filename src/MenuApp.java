@@ -46,9 +46,9 @@ public class MenuApp {
 
                     int result = menuDAO.menuInsert(menuName, unitPrice, "보임", "사용중", categoryId);
                     if (result > 0) {
-                        System.out.println("메뉴가 추가되었습니다.");
+                        System.out.println("메뉴가 등록되었습니다.");
                     } else {
-                        System.out.println("메뉴 추가 실패.");
+                        System.out.println("메뉴 등록 실패.");
                     }
 
                     break;
@@ -183,7 +183,7 @@ public class MenuApp {
             
             
             } else if (number.equals("0")) {
-                System.out.println("프로그램을 종료합니다.");
+                System.out.println("종료합니다");
                 break;
             } else {
                 System.out.println("올바른 번호를 입력해주세요.");

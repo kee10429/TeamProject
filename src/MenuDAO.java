@@ -3,156 +3,150 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MenuDAO {
-
-    public MenuDAO() {}
-
-    // 메뉴 등록
-    public int menuInsert(String menu_name, int unit_price, String menu_show, String menu_delete, int category_id) {
-        int count = -1;
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            String url = "jdbc:mysql://192.168.0.99:3306/pos_db";
-            conn = DriverManager.getConnection(url, "pos", "pos");
-
-            String query = "INSERT INTO menu (menu_name, unit_price, menu_show, menu_delete, category_id) VALUES (?, ?, ?, ?, ?)";
-            pstmt = conn.prepareStatement(query);
-            pstmt.setString(1, menu_name);
-            pstmt.setInt(2, unit_price);
-            pstmt.setString(3, menu_show);
-            pstmt.setString(4, menu_delete);
-            pstmt.setInt(5, category_id);
-
-            count = pstmt.executeUpdate();
-            System.out.println(count + "건 등록");
-
-        } catch (Exception e) {
-            System.out.println("menuInsert 오류: " + e);
-        } finally {
-            try {
-                if (pstmt != null) pstmt.close();
-                if (conn != null) conn.close();
-            } catch (SQLException e) {
-                System.out.println("자원 정리 오류: " + e);
-            }
-        }
-        return count;
+	private Connection getConnection() throws SQLException, ClassNotFoundException {
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        String url = "jdbc:mysql://192.168.0.99:3306/pos_db";
+        return DriverManager.getConnection(url, "pos", "pos");
     }
 
-    // 메뉴 수정
-    public int menuUpdate(int menu_id, String menu_name, int unit_price, String menu_show, String menu_delete, int category_id) {
-        int count = -1;
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            String url = "jdbc:mysql://192.168.0.99:3306/pos_db";
-            conn = DriverManager.getConnection(url, "pos", "pos");
-
-            String query = "UPDATE menu SET menu_name = ?, unit_price = ?, menu_show = ?, menu_delete = ?, category_id = ? WHERE menu_id = ?";
-            pstmt = conn.prepareStatement(query);
-            pstmt.setString(1, menu_name);
-            pstmt.setInt(2, unit_price);
-            pstmt.setString(3, menu_show);
-            pstmt.setString(4, menu_delete);
-            pstmt.setInt(5, category_id);
-            pstmt.setInt(6, menu_id);
-
-            count = pstmt.executeUpdate();
-            System.out.println(count + "건이 수정되었습니다.");
-
-        } catch (Exception e) {
-            System.out.println("menuUpdate 오류: " + e);
-        } finally {
-            try {
-                if (pstmt != null) pstmt.close();
-                if (conn != null) conn.close();
-            } catch (SQLException e) {
-                System.out.println("자원 정리 오류: " + e);
-            }
-        }
-
-        return count;
-    }
-
-    // 메뉴 삭제 (물리 삭제 방식)
-    public int menuDelete(int menu_id) {
-        int count = -1;
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            String url = "jdbc:mysql://192.168.0.99:3306/pos_db";
-            conn = DriverManager.getConnection(url, "pos", "pos");
-
-            String query = "DELETE FROM menu WHERE menu_id = ?";
-            pstmt = conn.prepareStatement(query);
-            pstmt.setInt(1, menu_id);
-
-            count = pstmt.executeUpdate();
-            System.out.println(count + "건이 삭제되었습니다.");
-
-        } catch (Exception e) {
-            System.out.println("menuDelete 오류: " + e);
-        } finally {
-            try {
-                if (pstmt != null) pstmt.close();
-                if (conn != null) conn.close();
-            } catch (SQLException e) {
-                System.out.println("자원 정리 오류: " + e);
-            }
-        }
-
-        return count;
-    }
-
-    // 메뉴 리스트 (삭제된 메뉴 제외)
+    // 메뉴 리스트 가져오기 
     public List<MenuVO> menuList() {
-        List<MenuVO> menuList = new ArrayList<>();
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
+        List<MenuVO> list = new ArrayList<>();
 
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            String url = "jdbc:mysql://192.168.0.99:3306/pos_db";
-            conn = DriverManager.getConnection(url, "pos", "pos");
+        String sql = "SELECT m.menu_id, m.menu_name, m.unit_price, m.menu_show, m.menu_delete, " +
+                     "c.category_id, c.category_name " +
+                     "FROM menu m JOIN category c ON m.category_id = c.category_id " +
+                     "WHERE m.menu_delete != '삭제됨'";  // 삭제 안 된 메뉴만
 
-            String query = "SELECT m.menu_id, m.menu_name, m.unit_price, m.menu_show, m.menu_delete, m.category_id, c.category_name " +
-                           "FROM menu m JOIN category c ON m.category_id = c.category_id " +
-                           "WHERE m.menu_delete != '삭제됨' OR m.menu_delete IS NULL";
-            pstmt = conn.prepareStatement(query);
-            rs = pstmt.executeQuery();
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
 
             while (rs.next()) {
-                int menuId = rs.getInt("menu_id");
-                String menuName = rs.getString("menu_name");
-                int unitPrice = rs.getInt("unit_price");
-                String menuShow = rs.getString("menu_show");
-                String menuDelete = rs.getString("menu_delete");
-                int categoryId = rs.getInt("category_id");
-                String categoryName = rs.getString("category_name");
+                MenuVO vo = new MenuVO();
+                vo.setMenuId(rs.getInt("menu_id"));
+                vo.setMenuName(rs.getString("menu_name"));
+                vo.setUnitPrice(rs.getInt("unit_price"));
+                vo.setMenuShow(rs.getString("menu_show"));
+                vo.setMenuDelete(rs.getString("menu_delete"));
+                vo.setCategoryId(rs.getInt("category_id"));
+                vo.setCategoryName(rs.getString("category_name"));
 
-                MenuVO menu = new MenuVO(categoryName, menuId, menuName, unitPrice, menuShow, menuDelete, categoryId);
-                menuList.add(menu);
+                list.add(vo);
             }
 
         } catch (Exception e) {
             System.out.println("menuList 오류: " + e);
-        } finally {
-            try {
-                if (rs != null) rs.close();
-                if (pstmt != null) pstmt.close();
-                if (conn != null) conn.close();
-            } catch (SQLException e) {
-                System.out.println("자원 정리 오류: " + e);
-            }
         }
 
-        return menuList;
+        return list;
+    }
+
+    // 메뉴 추가
+    public int menuInsert(String menuName, int unitPrice, String menuShow, String menuDelete, int categoryId) {
+        int result = 0;
+        String sql = "INSERT INTO menu(menu_name, unit_price, menu_show, menu_delete, category_id) VALUES (?, ?, ?, ?, ?)";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, menuName);
+            pstmt.setInt(2, unitPrice);
+            pstmt.setString(3, menuShow);
+            pstmt.setString(4, menuDelete);
+            pstmt.setInt(5, categoryId);
+
+            result = pstmt.executeUpdate();
+
+        } catch (Exception e) {
+            System.out.println("menuInsert 오류: " + e);
+        }
+
+        return result;
+    }
+
+    // 메뉴 삭제 
+    public int menuDelete(int menuId) {
+        int result = 0;
+        String sql = "UPDATE menu SET menu_delete = '삭제됨' WHERE menu_id = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, menuId);
+            result = pstmt.executeUpdate();
+
+        } catch (Exception e) {
+            System.out.println("menuDelete 오류: " + e);
+        }
+
+        return result;
+    }
+
+    // 메뉴 수정 (메뉴명, 단가, 카테고리 수정)
+    public int menuUpdate(int menuId, String menuName, int unitPrice, int categoryId) {
+        int result = 0;
+        String sql = "UPDATE menu SET menu_name = ?, unit_price = ?, category_id = ? WHERE menu_id = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, menuName);
+            pstmt.setInt(2, unitPrice);
+            pstmt.setInt(3, categoryId);
+            pstmt.setInt(4, menuId);
+
+            result = pstmt.executeUpdate();
+
+        } catch (Exception e) {
+            System.out.println("menuUpdate 오류: " + e);
+        }
+
+        return result;
+    }
+
+    // 메뉴 숨기기/보이기 토글 (menu_show 컬럼 변경)
+    public int toggleMenuShow(int menuId, String currentShow) {
+        int result = 0;
+        String newShow = currentShow.equals("보임") ? "숨겨짐" : "보임";
+
+        String sql = "UPDATE menu SET menu_show = ? WHERE menu_id = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, newShow);
+            pstmt.setInt(2, menuId);
+
+            result = pstmt.executeUpdate();
+
+        } catch (Exception e) {
+            System.out.println("toggleMenuShow 오류: " + e);
+        }
+
+        return result;
+    }
+
+    // category 이름으로 category_id 조회 
+    public int getCategoryIdByName(String categoryName) {
+        int categoryId = -1;
+
+        String sql = "SELECT category_id FROM category WHERE category_name = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, categoryName);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    categoryId = rs.getInt("category_id");
+                }
+            }
+
+        } catch (Exception e) {
+            System.out.println("getCategoryIdByName 오류: " + e);
+        }
+
+        return categoryId;
     }
 }
